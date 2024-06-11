@@ -73,12 +73,14 @@ object LoanStatsDAO {
 
   def find(
       limit: Int,
+      offset: Int = 0,
       maybeSortField: Option[String] = None,
       maybeSortDirection: Option[Int] = None,
       filters: LoanStatsFilter = LoanStatsFilter(),
   ): Future[Seq[LoanStat]] = {
-    // A negative limit would make the SELECT return every row
-    val nonNegativeLimit = Math.max(limit, 0)
+    val minLimit = 0
+    val maxLimit = 100
+    val boundedLimit = Math.min(Math.max(limit, minLimit), maxLimit)
 
     val sortedQuery = maybeSortField match {
       case None => query
@@ -96,6 +98,6 @@ object LoanStatsDAO {
       .filterOpt(filters.grade)(_.grade === _)
       .filterOpt(filters.subGrade)(_.subGrade === _)
 
-    db.run(sortedAndFilteredQuery.take(nonNegativeLimit).result)
+    db.run(sortedAndFilteredQuery.drop(offset).take(boundedLimit).result)
   }
 }

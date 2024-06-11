@@ -170,10 +170,11 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       contentAsJson(actual) mustEqual Json.toJson(expected)
     }
 
-    "return the first grade A loan for New Jersey" in {
+    "return the second grade A loan for New Jersey" in {
       val controller = new LoanController(stubControllerComponents())
       val reqBody = Json.parse("""{
         "limit": 1,
+        "offset": 1,
         "filter": { "grade": "A", "state": "NJ" }
       }""")
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
@@ -181,14 +182,14 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       val expected = Seq(
         LoanStat(
-          id=126412424,
-          loanAmount=Some(10000),
+          id=126371281,
+          loanAmount=Some(11200),
           date=Some("Dec-2017"),
           state=Some("NJ"),
           grade=Some("A"),
-          subGrade=Some("A1"),
-          ficoRangeLow=Some(775),
-          ficoRangeHigh=Some(779),
+          subGrade=Some("A2"),
+          ficoRangeLow=Some(795),
+          ficoRangeHigh=Some(799),
         ),
       )
 

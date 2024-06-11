@@ -26,6 +26,9 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
     * - `limit: Optional[Int]` - the maximum number of results to return
     *   * if null, defaults to 10
     *   * if negative, defaults to 0
+    *   * if greater than 100, defaults to 100
+    * - `offset: Optional[Int]` - the number of results to skip
+    *   * defaults to 0 if null or negative
     * - `sortField: Optional[String]` - the field to sort by
     * - `sortDirection: Optional[Int]` - the sort direction, 1 for ascending, -1 for descending
     *   * if null and `sortField` is defined, defaults to 1
@@ -41,6 +44,7 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
         //- NOTE: Manually parsing the request body after Action.async(parse.json) worked for real http
         //- requests but returned 400 from the controller tests.
         val limit = (body \ "limit").asOpt[Int].getOrElse(10) // Set a default limit
+        val offset = (body \ "offset").asOpt[Int].getOrElse(0) // Set a default offset
         val sortField = (body \ "sortField").asOpt[String]
         val sortDirection = (body \ "sortDirection").asOpt[Int]
 
@@ -51,7 +55,7 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
         )
 
         LoanStatsDAO
-          .find(limit, sortField, sortDirection, filters)
+          .find(limit, offset, sortField, sortDirection, filters)
           .map(result => Ok(Json.toJson(result)))
       }
     }
