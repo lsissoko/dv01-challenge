@@ -44,4 +44,39 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
         .map(result => Ok(Json.toJson(result)))
     }
   }
+
+  /**
+    * Returns aggregate data for a continuous variable grouped by a categorical variable,
+    * e.g. loan amount by state
+    *
+    * @param selectField (query string param) the continuous variable to aggregate
+    * @param groupByField (query string param) the cateogorical variable to group by
+    * @return list of [[models.BasicLoanStatsResult]]
+    */
+  def aggregate(selectField: String, groupByField: String) = Action.async { implicit req =>
+    //- TODO extract to a Map or method, maybe in a service class
+    //- TODO support more variables
+    // Must be a continuous variable
+    val selectColName = Some(selectField) match {
+      case Some("loanAmount") => "loan_amnt"
+      case _ => ""
+    }
+    // Must be a categorical variable
+    val groupByColName = Some(groupByField) match {
+      case Some("state") => "addr_state"
+      case Some("grade") => "grade"
+      case _ => ""
+    }
+
+    //- TODO better request body validation
+    if (selectColName.isEmpty()) {
+      Future.successful(BadRequest("invalid selectField"))
+    } else if (groupByColName.isEmpty()) {
+      Future.successful(BadRequest("invalid groupByField"))
+    } else {
+    LoanStatsDAO
+      .aggregate(selectColName, groupByColName)
+      .map(result => Ok(Json.toJson(result)))
+    }
+  }
 }

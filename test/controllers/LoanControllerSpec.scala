@@ -8,6 +8,7 @@ import play.api.libs.json.Json
 import persistence.LoanStatsTable.LoanStat
 import org.apache.pekko.actor.ActorSystem
 import models.PaginatedResult
+import models.BasicLoanStatsResult
 
 class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
 
@@ -147,6 +148,81 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+  }
+
+  "LoanController aggregate" should {
+    "return the min, max, and mean loan amounts for each state" in {
+      val controller = new LoanController(stubControllerComponents())
+      val action = controller.aggregate("loanAmount", "state")
+      val req = FakeRequest(GET, "/api/loans/aggregate")
+      val actual = call(action, req)
+
+      val expected = Seq(BasicLoanStatsResult(
+        grouping = "AK",
+        min = Some(1500),
+        max = Some(40000),
+        mean = Some(16852.53036437247),
+      ))
+
+      status(actual) mustBe OK
+      // Only check the first result because there are 50 states
+      contentAsJson(actual).head mustBe Json.toJson(expected).head
+    }
+
+    "return the min, max, and mean loan amounts for each grade" in {
+      val controller = new LoanController(stubControllerComponents())
+      val action = controller.aggregate("loanAmount", "grade")
+      val req = FakeRequest(GET, "/api/loans/aggregate")
+      val actual = call(action, req)
+
+      val expected = Seq(
+        BasicLoanStatsResult(
+          grouping = "A",
+          min = Some(1000),
+          max = Some(40000),
+          mean = Some(14514.315422885573),
+        ),
+        BasicLoanStatsResult(
+          grouping = "B",
+          min = Some(1000),
+          max = Some(40000),
+          mean = Some(15074.927365048332),
+        ),
+        BasicLoanStatsResult(
+          grouping = "C",
+          min = Some(1000),
+          max = Some(40000),
+          mean = Some(15561.465724686863),
+        ),
+        BasicLoanStatsResult(
+          grouping = "D",
+          min = Some(1000),
+          max = Some(40000),
+          mean = Some(15575.28827315981),
+        ),
+        BasicLoanStatsResult(
+          grouping = "E",
+          min = Some(1000),
+          max = Some(40000),
+          mean = Some(16858.481669845307),
+        ),
+        BasicLoanStatsResult(
+          grouping = "F",
+          min = Some(1200),
+          max = Some(40000),
+          mean = Some(20251.72981878089),
+        ),
+        BasicLoanStatsResult(
+          grouping = "G",
+          min = Some(2575),
+          max = Some(40000),
+          mean = Some(22319.373673036094),
+        ),
+      )
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustBe Json.toJson(expected)
     }
   }
 }

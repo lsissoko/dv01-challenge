@@ -39,3 +39,14 @@ case class PaginatedResult[T](
 object PaginatedResult {
   implicit val formatLoanStat = Json.format[PaginatedResult[LoanStat]]
 }
+
+case class BasicLoanStatsResult(
+  grouping: String,
+  min: Option[Int],
+  max: Option[Int],
+  mean: Option[Double],
+)
+
+object BasicLoanStatsResult {
+  implicit val format = Json.format[BasicLoanStatsResult]
+}

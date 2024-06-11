@@ -10,6 +10,8 @@ import slick.lifted.{ColumnOrdered, Ordered}
 import slick.ast.Ordering
 import play.api.libs.json.Reads
 import models.LoanStatsFilter
+import models.BasicLoanStatsResult
+import persistence.LoanStatsTable.LoanStatsTableName
 
 object DbConfig {
   val db = Database.forConfig("sqlite")
@@ -32,7 +34,9 @@ object LoanStatsTable {
     implicit val format: Format[LoanStat] = Json.format[LoanStat]
   }
 
-  class LoanStats(tag: Tag) extends Table[LoanStat](tag, "loan_stats") {
+  val LoanStatsTableName = "loan_stats"
+
+  class LoanStats(tag: Tag) extends Table[LoanStat](tag, LoanStatsTableName) {
     def id = column[Long]("id", O.PrimaryKey)
     def loanAmount = column[Int]("loan_amnt")
     // TODO convert to DateTime (string/alpha sorting is wrong, e.g. "Oct-2017" should be before "Dec-2017")
@@ -102,6 +106,27 @@ object LoanStatsDAO {
         entities,
         hasNextPage = totalCount - (offset + limit) > 0
       )
+    }
+  }
+
+  /**
+    * Returns aggregate data for a continuous variable grouped by a categorical variable,
+    * e.g. loan amount by state
+    */
+  def aggregate(selectCol: String, groupByCol: String) = {
+    db.run {
+      sql"""
+      select #$groupByCol, min(#$selectCol), max(#$selectCol), avg(#$selectCol)
+      from #$LoanStatsTableName
+      group by #$groupByCol;
+      """
+      .as[(String, Int, Int, Double)]
+      .map(res => res.map(bar => BasicLoanStatsResult(
+        grouping = bar._1,
+        min = Some(bar._2),
+        max = Some(bar._3),
+        mean = Some(bar._4),
+      )))
     }
   }
 }
