@@ -6,6 +6,8 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import play.api.libs.json.{Format, Json}
 import scala.concurrent.Future
+import slick.lifted.{ColumnOrdered, Ordered}
+import slick.ast.Ordering
 
 object DbConfig {
   val db = Database.forConfig("sqlite")
@@ -31,12 +33,25 @@ object LoanStatsTable {
   class LoanStats(tag: Tag) extends Table[LoanStat](tag, "loan_stats") {
     def id = column[Long]("id", O.PrimaryKey)
     def loanAmount = column[Int]("loan_amnt")
-    def date = column[String]("issue_d") // TODO convert to DateTime
+    // TODO convert to DateTime (string/alpha sorting is wrong, e.g. "Oct-2017" should be before "Dec-2017")
+    def date = column[String]("issue_d")
     def state = column[String]("addr_state")
     def grade = column[String]("grade")
     def subGrade = column[String]("sub_grade")
     def ficoRangeLow = column[Int]("fico_range_low")
     def ficoRangeHigh = column[Int]("fico_range_high")
+
+    val sortFields: Map[String, Rep[_]] = Map(
+      "id" -> this.id,
+      "loanAmount" -> this.loanAmount,
+      "date" -> this.date,
+      "state" -> this.state,
+      "grade" -> this.grade,
+      "subGrade" -> this.subGrade,
+      "ficoRangeLow" -> this.ficoRangeLow,
+      "ficoRangeHigh" -> this.ficoRangeHigh,
+    )
+
     override def * = (id, loanAmount.?, date.?, state.?, grade.?, subGrade.?, ficoRangeLow.?, ficoRangeHigh.?).mapTo[LoanStat]
   }
 
@@ -47,10 +62,24 @@ object LoanStatsDAO {
   import DbConfig.db
   import LoanStatsTable.{LoanStat, query}
 
-  def find(limit: Int): Future[Seq[LoanStat]] = {
+  def find(
+      limit: Int,
+      maybeSortField: Option[String] = None,
+      maybeSortDirection: Option[Int] = None
+  ): Future[Seq[LoanStat]] = {
     // A negative limit would make the SELECT return every row
     val nonNegativeLimit = Math.max(limit, 0)
 
-    db.run(query.take(nonNegativeLimit).result)
+    val q = maybeSortField match {
+      case None => query
+      case Some(fieldName) => {
+        val direction = maybeSortDirection.getOrElse(1)
+        val ordering = if (direction == -1) Ordering.Desc else Ordering.Asc
+        val sortOrderRep: Rep[_] => Ordered = ColumnOrdered(_, Ordering(ordering))
+        query.sortBy(_.sortFields(fieldName))(sortOrderRep)
+      }
+    }
+
+    db.run(q.take(nonNegativeLimit).result)
   }
 }

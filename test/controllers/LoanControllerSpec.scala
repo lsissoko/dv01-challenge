@@ -65,4 +65,94 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       contentAsJson(actual) mustEqual Json.toJson(expected)
     }
   }
+
+  "LoanController POST" should {
+    "return an empty list when the limit is negative" in {
+      val controller = new LoanController(stubControllerComponents())
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> -1))
+      val actual = controller.search().apply(req)
+
+      val expected = Seq.empty[LoanStat]
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+
+    "return an empty list when the limit is zero" in {
+      val controller = new LoanController(stubControllerComponents())
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> 0))
+      val actual = controller.search().apply(req)
+
+      val expected = Seq.empty[LoanStat]
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+
+    "return the 2 loans with the best grades" in {
+      val controller = new LoanController(stubControllerComponents())
+      val reqBody = Json.obj("limit" -> 2, "sortField" -> "grade", "sortDirection" -> 1) // ascending sort
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
+      val actual = controller.search().apply(req)
+
+      val expected = Seq(
+        LoanStat(
+          id=126285300,
+          loanAmount=Some(40000),
+          date=Some("Dec-2017"),
+          state=Some("CA"),
+          grade=Some("A"),
+          subGrade=Some("A2"),
+          ficoRangeLow=Some(780),
+          ficoRangeHigh=Some(784),
+        ),
+        LoanStat(
+          id=126410177,
+          loanAmount=Some(6500),
+          date=Some("Dec-2017"),
+          state=Some("WV"),
+          grade=Some("A"),
+          subGrade=Some("A4"),
+          ficoRangeLow=Some(705),
+          ficoRangeHigh=Some(709),
+        ),
+      )
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+
+    "return the 2 loans with the worst grades" in {
+      val controller = new LoanController(stubControllerComponents())
+      val reqBody = Json.obj("limit" -> 2, "sortField" -> "grade", "sortDirection" -> -1) // descending sort
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
+      val actual = controller.search().apply(req)
+
+      val expected = Seq(
+        LoanStat(
+          id=126176997,
+          loanAmount=Some(30000),
+          date=Some("Dec-2017"),
+          state=Some("NY"),
+          grade=Some("G"),
+          subGrade=Some("G1"),
+          ficoRangeLow=Some(700),
+          ficoRangeHigh=Some(704),
+        ),
+        LoanStat(
+          id=126068485,
+          loanAmount=Some(20000),
+          date=Some("Dec-2017"),
+          state=Some("VA"),
+          grade=Some("G"),
+          subGrade=Some("G1"),
+          ficoRangeLow=Some(665),
+          ficoRangeHigh=Some(669),
+        ),
+      )
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+  }
 }
