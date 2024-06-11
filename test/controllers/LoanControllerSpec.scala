@@ -154,5 +154,46 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
     }
+
+    "return an empty list when the given grade is invalid" in {
+      val controller = new LoanController(stubControllerComponents())
+      val reqBody = Json.parse("""{
+        "limit": 1,
+        "filter": { "grade": "veryFakeGrade" }
+      }""")
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
+      val actual = controller.search().apply(req)
+
+      val expected = Seq.empty[LoanStat]
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
+
+    "return the first grade A loan for New Jersey" in {
+      val controller = new LoanController(stubControllerComponents())
+      val reqBody = Json.parse("""{
+        "limit": 1,
+        "filter": { "grade": "A", "state": "NJ" }
+      }""")
+      val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
+      val actual = controller.search().apply(req)
+
+      val expected = Seq(
+        LoanStat(
+          id=126412424,
+          loanAmount=Some(10000),
+          date=Some("Dec-2017"),
+          state=Some("NJ"),
+          grade=Some("A"),
+          subGrade=Some("A1"),
+          ficoRangeLow=Some(775),
+          ficoRangeHigh=Some(779),
+        ),
+      )
+
+      status(actual) mustBe OK
+      contentAsJson(actual) mustEqual Json.toJson(expected)
+    }
   }
 }

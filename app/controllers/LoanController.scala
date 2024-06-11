@@ -29,6 +29,9 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
     * - `sortField: Optional[String]` - the field to sort by
     * - `sortDirection: Optional[Int]` - the sort direction, 1 for ascending, -1 for descending
     *   * if null and `sortField` is defined, defaults to 1
+    * - `filters: Map[String, Any]` - the optional query filters
+    *   * supported keys are `"state"`, `"grade"`, and `"subGrade"`
+    *   * e.g. `{"state": "CA"}` or `{"state": "TX", "grade": "B"}`
     */
   def search() = Action.async { implicit req =>
     req.body.asJson match {
@@ -41,8 +44,14 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
         val sortField = (body \ "sortField").asOpt[String]
         val sortDirection = (body \ "sortDirection").asOpt[Int]
 
+        val filters = LoanStatsDAO.LoanStatsFilter(
+          state = (body \ "filter" \ "state").asOpt[String],
+          grade = (body \ "filter" \ "grade").asOpt[String],
+          subGrade = (body \ "filter" \ "subGrade").asOpt[String],
+        )
+
         LoanStatsDAO
-          .find(limit, sortField, sortDirection)
+          .find(limit, sortField, sortDirection, filters)
           .map(result => Ok(Json.toJson(result)))
       }
     }

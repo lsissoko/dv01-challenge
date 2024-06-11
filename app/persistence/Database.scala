@@ -62,15 +62,25 @@ object LoanStatsDAO {
   import DbConfig.db
   import LoanStatsTable.{LoanStat, query}
 
+  case class LoanStatsFilter (
+    // TODO add more equality filters
+    state: Option[String] = None,
+    grade: Option[String] = None,
+    subGrade: Option[String] = None,
+
+    // TODO add range filters (maybe in a separate case class), e.g. minGrade and maxGrade
+  )
+
   def find(
       limit: Int,
       maybeSortField: Option[String] = None,
-      maybeSortDirection: Option[Int] = None
+      maybeSortDirection: Option[Int] = None,
+      filters: LoanStatsFilter = LoanStatsFilter(),
   ): Future[Seq[LoanStat]] = {
     // A negative limit would make the SELECT return every row
     val nonNegativeLimit = Math.max(limit, 0)
 
-    val q = maybeSortField match {
+    val sortedQuery = maybeSortField match {
       case None => query
       case Some(fieldName) => {
         val direction = maybeSortDirection.getOrElse(1)
@@ -80,6 +90,12 @@ object LoanStatsDAO {
       }
     }
 
-    db.run(q.take(nonNegativeLimit).result)
+    //- Conditional filtering ignores the null filters.<name> values
+    val sortedAndFilteredQuery = sortedQuery
+      .filterOpt(filters.state)(_.state === _)
+      .filterOpt(filters.grade)(_.grade === _)
+      .filterOpt(filters.subGrade)(_.subGrade === _)
+
+    db.run(sortedAndFilteredQuery.take(nonNegativeLimit).result)
   }
 }
