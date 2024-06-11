@@ -6,8 +6,11 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json.Json
 import persistence.LoanStatsTable.LoanStat
+import org.apache.pekko.actor.ActorSystem
 
 class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
+
+  implicit val actorSystem: ActorSystem = ActorSystem()
 
   "LoanController GET" should {
 
@@ -70,7 +73,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "return an empty list when the limit is negative" in {
       val controller = new LoanController(stubControllerComponents())
       val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> -1))
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq.empty[LoanStat]
 
@@ -81,7 +84,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
     "return an empty list when the limit is zero" in {
       val controller = new LoanController(stubControllerComponents())
       val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> 0))
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq.empty[LoanStat]
 
@@ -93,7 +96,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = new LoanController(stubControllerComponents())
       val reqBody = Json.obj("limit" -> 2, "sortField" -> "grade", "sortDirection" -> 1) // ascending sort
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq(
         LoanStat(
@@ -126,7 +129,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = new LoanController(stubControllerComponents())
       val reqBody = Json.obj("limit" -> 2, "sortField" -> "grade", "sortDirection" -> -1) // descending sort
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq(
         LoanStat(
@@ -162,7 +165,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         "filter": { "grade": "veryFakeGrade" }
       }""")
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq.empty[LoanStat]
 
@@ -178,7 +181,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
         "filter": { "grade": "A", "state": "NJ" }
       }""")
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
-      val actual = controller.search().apply(req)
+      val actual = call(controller.search(), req)
 
       val expected = Seq(
         LoanStat(

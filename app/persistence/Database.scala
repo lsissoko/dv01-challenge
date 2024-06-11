@@ -8,6 +8,8 @@ import play.api.libs.json.{Format, Json}
 import scala.concurrent.Future
 import slick.lifted.{ColumnOrdered, Ordered}
 import slick.ast.Ordering
+import play.api.libs.json.Reads
+import models.LoanStatsFilter
 
 object DbConfig {
   val db = Database.forConfig("sqlite")
@@ -62,21 +64,12 @@ object LoanStatsDAO {
   import DbConfig.db
   import LoanStatsTable.{LoanStat, query}
 
-  case class LoanStatsFilter (
-    // TODO add more equality filters
-    state: Option[String] = None,
-    grade: Option[String] = None,
-    subGrade: Option[String] = None,
-
-    // TODO add range filters (maybe in a separate case class), e.g. minGrade and maxGrade
-  )
-
   def find(
       limit: Int,
       offset: Int = 0,
       maybeSortField: Option[String] = None,
       maybeSortDirection: Option[Int] = None,
-      filters: LoanStatsFilter = LoanStatsFilter(),
+      maybeFilter: Option[LoanStatsFilter] = None,
   ): Future[Seq[LoanStat]] = {
     val minLimit = 0
     val maxLimit = 100
@@ -93,6 +86,7 @@ object LoanStatsDAO {
     }
 
     //- Conditional filtering ignores the null filters.<name> values
+    val filters = maybeFilter.getOrElse(LoanStatsFilter())
     val sortedAndFilteredQuery = sortedQuery
       .filterOpt(filters.state)(_.state === _)
       .filterOpt(filters.grade)(_.grade === _)

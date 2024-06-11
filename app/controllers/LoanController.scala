@@ -1,11 +1,11 @@
 package controllers
 
-import javax.inject._
-import play.api._
-import play.api.libs.json._
+import javax.inject.{Inject, Singleton}
+import play.api.libs.json.Json
 import play.api.mvc._
 import scala.concurrent.Future
 
+import models.LoanStatsSearch
 import persistence.LoanStatsDAO
 
 @Singleton
@@ -20,9 +20,9 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
   }
 
   /**
-    * Returns loan stats from the database matching the given criteria.
+    * Returns loan stats from the database matching the given [[LoanStatsSearch]].
     *
-    * The POST request accepts criteria in a JSON body with the following fields:
+    * The POST request's JSON body is a [[LoanStatsSearch]] with:
     * - `limit: Optional[Int]` - the maximum number of results to return
     *   * if null, defaults to 10
     *   * if negative, defaults to 0
@@ -36,28 +36,18 @@ class LoanController @Inject()(val controllerComponents: ControllerComponents) e
     *   * supported keys are `"state"`, `"grade"`, and `"subGrade"`
     *   * e.g. `{"state": "CA"}` or `{"state": "TX", "grade": "B"}`
     */
-  def search() = Action.async { implicit req =>
-    req.body.asJson match {
-      case None => Future.successful(BadRequest) // TODO validation errors would be nice
-
-      case Some(body) => {
-        //- NOTE: Manually parsing the request body after Action.async(parse.json) worked for real http
-        //- requests but returned 400 from the controller tests.
-        val limit = (body \ "limit").asOpt[Int].getOrElse(10) // Set a default limit
-        val offset = (body \ "offset").asOpt[Int].getOrElse(0) // Set a default offset
-        val sortField = (body \ "sortField").asOpt[String]
-        val sortDirection = (body \ "sortDirection").asOpt[Int]
-
-        val filters = LoanStatsDAO.LoanStatsFilter(
-          state = (body \ "filter" \ "state").asOpt[String],
-          grade = (body \ "filter" \ "grade").asOpt[String],
-          subGrade = (body \ "filter" \ "subGrade").asOpt[String],
+  def search() = Action.async(parse.json) { implicit req =>
+    req.body.asOpt[LoanStatsSearch] match {
+      case None => Future.successful(BadRequest) //- TODO validation errors would be nice
+      case Some(body) => LoanStatsDAO
+        .find(
+          limit = body.limit.getOrElse(10),
+          offset = body.offset.getOrElse(0),
+          maybeSortField = body.sortField,
+          maybeSortDirection = body.sortDirection,
+          maybeFilter = body.filter,
         )
-
-        LoanStatsDAO
-          .find(limit, offset, sortField, sortDirection, filters)
-          .map(result => Ok(Json.toJson(result)))
-      }
+        .map(result => Ok(Json.toJson(result)))
     }
   }
 }
