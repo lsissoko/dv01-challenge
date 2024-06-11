@@ -5,6 +5,7 @@ import org.scalatestplus.play.guice._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json.Json
+import persistence.LoanStatsTable.LoanStat
 
 class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
 
@@ -14,7 +15,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = new LoanController(stubControllerComponents())
       val actual = controller.find(-1234).apply(FakeRequest(GET, "/api/loans"))
 
-      val expected = Seq.empty[(Long, Int)]
+      val expected = Seq.empty[LoanStat]
 
       status(actual) mustBe OK
       contentType(actual) mustBe Some("application/json")
@@ -25,7 +26,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val controller = new LoanController(stubControllerComponents())
       val actual = controller.find(0).apply(FakeRequest(GET, "/api/loans"))
 
-      val expected = Seq.empty[(Long, Int)]
+      val expected = Seq.empty[LoanStat]
 
       status(actual) mustBe OK
       contentType(actual) mustBe Some("application/json")
@@ -37,9 +38,26 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val actual = controller.find(2).apply(FakeRequest(GET, "/api/loans"))
 
       val expected = Seq(
-        // Seq(id, loan_amnt)
-        Seq(126285300, 40000),
-        Seq(126367373, 24000)
+        LoanStat(
+          id=126285300,
+          loanAmount=Some(40000),
+          date=Some("Dec-2017"),
+          state=Some("CA"),
+          grade=Some("A"),
+          subGrade=Some("A2"),
+          ficoRangeLow=Some(780),
+          ficoRangeHigh=Some(784),
+        ),
+        LoanStat(
+          id=126367373,
+          loanAmount=Some(24000),
+          date=Some("Dec-2017"),
+          state=Some("IN"),
+          grade=Some("C"),
+          subGrade=Some("C4"),
+          ficoRangeLow=Some(705),
+          ficoRangeHigh=Some(709),
+        ),
       )
 
       status(actual) mustBe OK
