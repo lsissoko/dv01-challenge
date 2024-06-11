@@ -63,6 +63,7 @@ object LoanStatsTable {
 object LoanStatsDAO {
   import DbConfig.db
   import LoanStatsTable.{LoanStat, query}
+  import models.PaginatedResult
 
   def find(
       limit: Int,
@@ -70,7 +71,7 @@ object LoanStatsDAO {
       maybeSortField: Option[String] = None,
       maybeSortDirection: Option[Int] = None,
       maybeFilter: Option[LoanStatsFilter] = None,
-  ): Future[Seq[LoanStat]] = {
+  ): Future[PaginatedResult[LoanStat]] = {
     val minLimit = 0
     val maxLimit = 100
     val boundedLimit = Math.min(Math.max(limit, minLimit), maxLimit)
@@ -92,6 +93,15 @@ object LoanStatsDAO {
       .filterOpt(filters.grade)(_.grade === _)
       .filterOpt(filters.subGrade)(_.subGrade === _)
 
-    db.run(sortedAndFilteredQuery.drop(offset).take(boundedLimit).result)
+    db.run {
+      for {
+        totalCount <- sortedAndFilteredQuery.length.result
+        entities <- sortedAndFilteredQuery.drop(offset).take(boundedLimit).result
+      } yield PaginatedResult(
+        totalCount,
+        entities,
+        hasNextPage = totalCount - (offset + limit) > 0
+      )
+    }
   }
 }

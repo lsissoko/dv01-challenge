@@ -7,8 +7,11 @@ import play.api.test.Helpers._
 import play.api.libs.json.Json
 import persistence.LoanStatsTable.LoanStat
 import org.apache.pekko.actor.ActorSystem
+import models.PaginatedResult
 
 class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting {
+
+  val totalCount = 118636
 
   implicit val actorSystem: ActorSystem = ActorSystem()
 
@@ -75,7 +78,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> -1))
       val actual = call(controller.search(), req)
 
-      val expected = Seq.empty[LoanStat]
+      val expected = PaginatedResult(totalCount, Seq.empty[LoanStat], hasNextPage = true)
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
@@ -86,7 +89,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(Json.obj("limit" -> 0))
       val actual = call(controller.search(), req)
 
-      val expected = Seq.empty[LoanStat]
+      val expected = PaginatedResult(totalCount, Seq.empty[LoanStat], hasNextPage = true)
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
@@ -98,7 +101,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
       val actual = call(controller.search(), req)
 
-      val expected = Seq(
+      val expectedEntities = Seq(
         LoanStat(
           id=126285300,
           loanAmount=Some(40000),
@@ -120,6 +123,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           ficoRangeHigh=Some(709),
         ),
       )
+      val expected = PaginatedResult(totalCount, expectedEntities, hasNextPage = true)
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
@@ -131,7 +135,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
       val actual = call(controller.search(), req)
 
-      val expected = Seq(
+      val expectedEntities = Seq(
         LoanStat(
           id=126176997,
           loanAmount=Some(30000),
@@ -153,6 +157,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           ficoRangeHigh=Some(669),
         ),
       )
+      val expected = PaginatedResult(totalCount, expectedEntities, hasNextPage = true)
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
@@ -167,7 +172,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
       val actual = call(controller.search(), req)
 
-      val expected = Seq.empty[LoanStat]
+      val expected = PaginatedResult(entities = Seq.empty[LoanStat])
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)
@@ -183,7 +188,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
       val req = FakeRequest(POST, "/api/loans").withJsonBody(reqBody)
       val actual = call(controller.search(), req)
 
-      val expected = Seq(
+      val expectedEntities = Seq(
         LoanStat(
           id=126371281,
           loanAmount=Some(11200),
@@ -195,6 +200,7 @@ class LoanControllerSpec extends PlaySpec with GuiceOneAppPerTest with Injecting
           ficoRangeHigh=Some(799),
         ),
       )
+      val expected = PaginatedResult(totalCount = 914, expectedEntities, hasNextPage = true)
 
       status(actual) mustBe OK
       contentAsJson(actual) mustEqual Json.toJson(expected)

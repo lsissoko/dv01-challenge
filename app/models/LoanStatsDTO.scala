@@ -3,6 +3,7 @@ package models
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import scala.language.postfixOps
+import persistence.LoanStatsTable.LoanStat
 
 case class LoanStatsSearch(
   limit: Option[Int],
@@ -27,4 +28,14 @@ case class LoanStatsFilter (
 
 object LoanStatsFilter {
   implicit val reads: Reads[LoanStatsFilter] = Json.reads[LoanStatsFilter]
+}
+
+case class PaginatedResult[T](
+  totalCount: Int = 0,
+  entities: Seq[T] = Seq.empty,
+  hasNextPage: Boolean = false,
+)
+
+object PaginatedResult {
+  implicit val formatLoanStat = Json.format[PaginatedResult[LoanStat]]
 }
