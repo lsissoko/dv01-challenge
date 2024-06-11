@@ -44,4 +44,5 @@ bin/
 
 # data
 local_data/
-
+*.db
+*.sqlite
